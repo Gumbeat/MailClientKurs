@@ -42,5 +42,14 @@ public class MailInfo {
     public static final String PUBLIC_KEY_EXT = ".pub";
     public static final String PRIVATE_KEY_EXT = ".pk";
 
+    public static String pathToRSAPublicKey;
+    public static String pathToRSAPrivateKey;
+
+    public static String pathToRSAPublicKeyCipher;
+    public static String pathToRSAPrivateKeyCipher;
+
+    public static String globalCurrentUser;
+    public static String globalSignFolder;
+
 
 }

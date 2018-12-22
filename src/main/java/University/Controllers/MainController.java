@@ -40,6 +40,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static University.Enums.FolderType.*;
+import static University.Info.MailInfo.globalCurrentUser;
 import static University.Utilities.MailUtility.checkMailServers;
 
 public class MainController implements Initializable {
@@ -70,9 +71,6 @@ public class MainController implements Initializable {
     private JFXSpinner spinner;
 
     @FXML
-    private Circle statusInternetShape;
-
-    @FXML
     private ListView<User> usersList;
 
     @FXML
@@ -87,6 +85,9 @@ public class MainController implements Initializable {
     @FXML
     private Button sentButton;
 
+    @FXML
+    private Label inline_lbl;
+
     private ObservableList<MessageHeadline> messagesList = FXCollections.observableArrayList();
     private ObservableList<User> accounts = FXCollections.observableArrayList();
     private Receiver receiver;
@@ -96,6 +97,8 @@ public class MainController implements Initializable {
 
     private boolean is_online;
 
+    public  Message imapMessage;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         checkInternetConnection();
@@ -104,6 +107,11 @@ public class MainController implements Initializable {
         tableMessages.setItems(messagesList);
 
         currentFolderType = INBOX;
+
+
+//        sentButton.setBorderPainted(false);
+//        sentButton.setFocusPainted(false);
+//        sentButton.setContentAreaFilled(false);
 
         createTable(tableMessages);
         tableMessages.setRowFactory(tv -> {
@@ -125,6 +133,7 @@ public class MainController implements Initializable {
     private void setSelectedUser() {
         currentUser = usersList.getSelectionModel().getSelectedItem();
         lbl_curr_user.setText(currentUser.getUsername());
+        globalCurrentUser = currentUser.getUsername().split("@")[0];
         if (is_online) {
             closeReceiver();
             setReceiver();
@@ -138,6 +147,7 @@ public class MainController implements Initializable {
         if (accounts.size() > 0) {
             currentUser = accounts.get(accounts.size() - 1);
             lbl_curr_user.setText(currentUser.getUsername());
+            globalCurrentUser = currentUser.getUsername().split("@")[0];
             closeReceiver();
             setReceiver();
             setNewMessages();
@@ -221,22 +231,24 @@ public class MainController implements Initializable {
     }
 
     private void createTable(TableView table) {
+        table.setPlaceholder(new Label("Здесь пока нет сообщений"));
 
-        TableColumn<MessageHeadline, String> fromColumn = new TableColumn<>("from");
+        TableColumn<MessageHeadline, String> fromColumn = new TableColumn<>("отправитель");
         fromColumn.setCellValueFactory(param -> param.getValue().fromProperty());
         fromColumn.setPrefWidth(200);
 
-        TableColumn<MessageHeadline, String> toColumn = new TableColumn<>("to");
+        TableColumn<MessageHeadline, String> toColumn = new TableColumn<>("получатель");
         toColumn.setCellValueFactory(param -> param.getValue().toProperty());
         toColumn.setPrefWidth(200);
 
-        TableColumn<MessageHeadline, String> subjectColumn = new TableColumn<>("subject");
+        TableColumn<MessageHeadline, String> subjectColumn = new TableColumn<>("тема");
         subjectColumn.setCellValueFactory(param -> param.getValue().subjectProperty());
-        subjectColumn.setPrefWidth(150);
+        subjectColumn.setPrefWidth(175);
 
-        TableColumn<MessageHeadline, Date> sentDateColumn = new TableColumn<>("date");
+        TableColumn<MessageHeadline, Date> sentDateColumn = new TableColumn<>("дата");
         sentDateColumn.setCellValueFactory(param -> param.getValue().dateProperty());
-        sentDateColumn.setPrefWidth(100);
+        sentDateColumn.setPrefWidth(175);
+
         sentDateColumn.setSortType(TableColumn.SortType.DESCENDING);
 
         table.getColumns().addAll(fromColumn, toColumn, subjectColumn, sentDateColumn);
@@ -244,7 +256,7 @@ public class MainController implements Initializable {
 
     private void checkInternetConnection() {
         is_online = MailUtility.checkInternetConnect();
-        statusInternetShape.setFill(is_online ? Color.GREENYELLOW : Color.ORANGERED);
+        inline_lbl.setText(is_online ? "Онлайн" : "Оффлайн");
         if (!is_online) {
             appWithoutInternet();
             sentButton.setDisable(!is_online);
@@ -298,7 +310,7 @@ public class MainController implements Initializable {
         if (messagesList != null && receiver != null) {
             messagesList.clear();
             messagesList.addAll(receiver.checkMessages());
-            tableMessages.getSortOrder().add(tableMessages.getColumns().get(2));
+            tableMessages.getSortOrder().add(tableMessages.getColumns().get(3));
         }
     }
 
@@ -306,7 +318,7 @@ public class MainController implements Initializable {
         if (messagesList != null && accounts.size() != 0) {
             messagesList.clear();
             messagesList.addAll(new MStorUtility("Accounts/", currentUser.getUsername() + ".sbd/", currentFolderType).getLocalMail());
-            tableMessages.getSortOrder().add(tableMessages.getColumns().get(2));
+            tableMessages.getSortOrder().add(tableMessages.getColumns().get(3));
         }
     }
 
@@ -346,7 +358,7 @@ public class MainController implements Initializable {
                     "/FXML/ReceiveForm.fxml"));
             Parent root = loader.load();
             ReceiverController controller = loader.getController();
-            Message imapMessage;
+
             if (is_online)
                 imapMessage = receiver.getMessage(msg);
             else
@@ -368,14 +380,14 @@ public class MainController implements Initializable {
 
     public void generateKeysRSA(ActionEvent event) {
         DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Выберите директорию для ключей RSA");
+        directoryChooser.setTitle("Выберите директорию для ключей для шифрования RSA");
         File selectedDirectory = directoryChooser.showDialog(((Node) event.getSource()).getScene().getWindow());
-        if (selectedDirectory != null) RSA.generateKeysRSA(selectedDirectory.getAbsolutePath());
+        if (selectedDirectory != null) RSA.generateKeysRSA(selectedDirectory.getAbsolutePath(), currentUser.getUsername());
     }
 
     public void generateKeysRSA2(ActionEvent event) {
         DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Выберите директорию для ключей RSA");
+        directoryChooser.setTitle("Выберите директорию для ключей для цифровой подписи RSA");
         File selectedDirectory = directoryChooser.showDialog(((Node) event.getSource()).getScene().getWindow());
         if (selectedDirectory != null) {
             String username;

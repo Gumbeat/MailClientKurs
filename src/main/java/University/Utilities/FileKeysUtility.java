@@ -1,5 +1,6 @@
 package University.Utilities;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,6 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static University.Info.MailInfo.*;
+import static University.Utilities.FileUtility.chooseFile;
 
 public class FileKeysUtility {
     private static final Logger logger = Logger.getLogger(FileKeysUtility.class.getName());
@@ -30,16 +32,16 @@ public class FileKeysUtility {
         out.close();
     }
 
-    public static void writePublicKeyRSA(PublicKey publicKey, String pathToFolder) throws IOException {
+    public static void writePublicKeyRSA(PublicKey publicKey, String keyPath) throws IOException {
         byte[] publicBytes = publicKey.getEncoded();
-        FileOutputStream outPublicKey = new FileOutputStream(pathToFolder + RSA_PUBLIC_KEY_EXT);
+        FileOutputStream outPublicKey = new FileOutputStream(keyPath);
         outPublicKey.write(publicBytes);
         outPublicKey.close();
     }
 
-    public static void writePrivateKeyRSA(PrivateKey privateKey, String pathToFolder) throws IOException {
+    public static void writePrivateKeyRSA(PrivateKey privateKey, String keyPath) throws IOException {
         byte[] privateBytes = privateKey.getEncoded();
-        FileOutputStream outPrivateKey = new FileOutputStream(pathToFolder + RSA_PRIVATE_KEY_EXT);
+        FileOutputStream outPrivateKey = new FileOutputStream(keyPath);
         outPrivateKey.write(privateBytes);
         outPrivateKey.close();
     }
@@ -66,7 +68,7 @@ public class FileKeysUtility {
     }
 
     public static PublicKey readFromFilePublicKeyRSA(String path) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-        byte[] bytes = Files.readAllBytes(Paths.get(path));
+        byte[] bytes = Files.readAllBytes(Paths.get(pathToRSAPublicKeyCipher));
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
         KeyFactory keyFactory = KeyFactory.getInstance(RSA_ALG);
         return keyFactory.generatePublic(keySpec);
@@ -79,16 +81,18 @@ public class FileKeysUtility {
         return keyFactory.generatePrivate(keySpec);
     }
 
-    public static void writeToFileKeysRSA(String pathToFolder, PrivateKey privateKey, PublicKey  publicKey){
-        String fileName = pathToFolder + "/" + getDateToString();
+    public static void writeToFileKeysRSA(String pathToFolder, PrivateKey privateKey, PublicKey  publicKey, String user){
 
-        try (FileOutputStream out = new FileOutputStream(fileName + PRIVATE_KEY_EXT)) {
+        pathToRSAPublicKeyCipher = pathToFolder + "/" + user + PUBLIC_KEY_EXT;
+        pathToRSAPrivateKeyCipher = pathToFolder + "/" + user + PRIVATE_KEY_EXT;
+
+        try (FileOutputStream out = new FileOutputStream(pathToRSAPrivateKey)) {
             out.write(privateKey.getEncoded());
         } catch (IOException e) {
             logger.log(Level.INFO, e.getMessage());
         }
 
-        try (FileOutputStream out = new FileOutputStream(fileName + PUBLIC_KEY_EXT)) {
+        try (FileOutputStream out = new FileOutputStream(pathToRSAPublicKeyCipher)) {
             out.write(publicKey.getEncoded());
         } catch (IOException e) {
             logger.log(Level.INFO, e.getMessage());

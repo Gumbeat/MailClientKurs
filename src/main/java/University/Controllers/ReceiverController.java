@@ -19,6 +19,9 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMultipart;
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,6 +30,8 @@ import static University.Encryption.DigitalSignatureEmail.verifyEmail;
 import static University.Utilities.MailUtility.decodeMailText;
 import static University.Utilities.MailUtility.decodeRecepitntsText;
 import static University.Utilities.MailUtility.getTextFromMessage;
+import static University.Controllers.EncryptionController.checkUserDir;
+import static University.Info.MailInfo.*;
 
 public class ReceiverController implements Initializable {
     private static final Logger logger = Logger.getLogger(ReceiverController.class.getName());
@@ -50,9 +55,9 @@ public class ReceiverController implements Initializable {
 
     private String separator = File.separator;
 
-    private String userHomePath = System.getProperty("user.home");
+    //private String userHomePath = System.getProperty("user.home");
 
-    private String downloadFolderPath = userHomePath + separator + "Downloads" + separator;
+    private String downloadFolderPath = "Downloads" + separator;
 
     private String content;
 
@@ -60,6 +65,7 @@ public class ReceiverController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+
         listFiles.setItems(observableFileList);
         listFiles.setOrientation(Orientation.VERTICAL);
         listFiles.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
@@ -75,12 +81,27 @@ public class ReceiverController implements Initializable {
         try {
             String subject = decodeMailText(message.getSubject());
             this.content = decodeMailText(getTextFromMessage(message, observableFileList)).replaceAll("\\r\\n", "");
-            String from = decodeRecepitntsText(message.getRecipients(Message.RecipientType.TO));
             subjectMail.setText(subject);
-            fromWhom.setText(from);
+
 //            contentMail.setText(content);
             WebEngine webEngine = webview.getEngine();
             webEngine.loadContent(content);
+
+            if (message.getFolder().getName().equals("INBOX"))
+            {
+                String from = decodeRecepitntsText(message.getFrom());
+                if (from.contains("<") && from.contains(">")) {
+                    from = from.substring(from.indexOf("<") + 1, from.indexOf(">"));
+                }
+                fromWhom.setText(from);
+                checkUserDir(from.split("@")[0], globalCurrentUser);
+            } else {
+                String from = decodeRecepitntsText(message.getRecipients(Message.RecipientType.TO));
+                fromWhom.setText(from);
+                checkUserDir(globalCurrentUser, from.split("@")[0]);
+            }
+
+
         } catch (MessagingException | IOException e) {
             logger.log(Level.INFO, e.getMessage());
         }
@@ -149,6 +170,8 @@ public class ReceiverController implements Initializable {
 
     public void decryptEmail(ActionEvent event) {
         WebEngine webEngine = webview.getEngine();
-        webEngine.loadContent(CipherUtil.decryptEmail(event, content));
+        String decryptedText = CipherUtil.decryptEmail(event, content);
+        webEngine.loadContent(decryptedText);
+        content = decryptedText;
     }
 }

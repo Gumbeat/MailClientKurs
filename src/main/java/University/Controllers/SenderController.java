@@ -22,6 +22,8 @@ import javafx.stage.Stage;
 import org.apache.commons.io.FilenameUtils;
 import org.jsoup.helper.StringUtil;
 
+
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -143,7 +145,8 @@ public class SenderController implements Initializable {
                 "/FXML/EncryptionForm.fxml"));
         Parent root = loader.load();
         EncryptionController controller = loader.getController();
-        controller.init(from, content.getHtmlText());
+        String to = to_whom.getText().replaceAll("\\s", "").split(",")[0];
+        controller.init(from, content.getHtmlText(), to);
         stage.setScene(new Scene(root));
         stage.setTitle("Зашифровать письмо");
         stage.initModality(Modality.WINDOW_MODAL);
